@@ -68,7 +68,7 @@ end
 (* Primitives are closures which map objects to objects. *)
 
 let prims = [
-   Atoms.add "1", Prims.selector 1;
+  Atoms.add "1", Prims.selector 1;
   Atoms.add "tail", Prims.tail;
   Atoms.add "id", Prims.identity;
   Atoms.add "atom", Prims.atom;
