@@ -1,0 +1,3 @@
+This is an attempt at implementing John Backus's FFP language as described in
+his 1977 Turing Award Lecture, "Can Programming be Liberated from the Von
+Neuman Style? A Function Style and Its Algebra of Programs".
