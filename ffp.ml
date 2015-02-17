@@ -2,10 +2,10 @@ type obj = Atom of string | Bottom | Sequence of obj list
 type expr = Obj of obj | App of expr * expr
 
 module Atoms = struct
-	let null = Atom "_"
-	let truth = Atom "T"
-	let fallicy = Atom "F"
-	let default = Atom "#"
+  let null = Atom "_"
+  let truth = Atom "T"
+  let fallicy = Atom "F"
+  let default = Atom "#"
   
   let alist = ref [
     null; truth; fallicy; default
@@ -23,28 +23,28 @@ end
 (* Primitive functions. Map objects to expressions. *)
 
 module Prims = struct
-	let selector n = function
-	  | Sequence l ->
-	    begin
-	      try List.nth l (n-1)
-	      with Failure _ -> Bottom
-	    end
-	  | _ -> Bottom
-	
-	let tail = function
-	  | Sequence (_ :: []) -> Atoms.null
-	  | Sequence (hd :: tl) -> Sequence tl
-	  | _ -> Bottom
-	
-	let identity x = x
-	
-	let atom = function
-	  | Atom _ -> Atoms.truth
-	  | Bottom -> Bottom
-	  | _ -> Atoms.fallicy
-	
-	let equals = function
-  	| Sequence [(Atom _ as y); (Atom _ as z)] ->
+  let selector n = function
+    | Sequence l ->
+      begin
+        try List.nth l (n-1)
+        with Failure _ -> Bottom
+      end
+    | _ -> Bottom
+  
+  let tail = function
+    | Sequence (_ :: []) -> Atoms.null
+    | Sequence (hd :: tl) -> Sequence tl
+    | _ -> Bottom
+  
+  let identity x = x
+  
+  let atom = function
+    | Atom _ -> Atoms.truth
+    | Bottom -> Bottom
+    | _ -> Atoms.fallicy
+  
+  let equals = function
+    | Sequence [(Atom _ as y); (Atom _ as z)] ->
       if y == z then Atoms.truth else Atoms.fallicy
     | _ ->
       Bottom
@@ -61,14 +61,14 @@ module Prims = struct
       | Sequence l -> Sequence (List.rev l)
       | _ -> Bottom
     in o
-	
-	let const c = function Bottom -> Bottom | _ -> c
+  
+  let const c = function Bottom -> Bottom | _ -> c
 end
 
 (* Primitives are closures which map objects to objects. *)
 
 let prims = [
- 	Atoms.add "1", Prims.selector 1;
+   Atoms.add "1", Prims.selector 1;
   Atoms.add "tail", Prims.tail;
   Atoms.add "id", Prims.identity;
   Atoms.add "atom", Prims.atom;
@@ -85,7 +85,7 @@ let defs = ref []
    The result is a closure which take an object argument and returns an expression. *)
 
 let rec repr x =
-	let prim f x = Obj (f x) in
+  let prim f x = Obj (f x) in
   let bot = prim (Prims.const Bottom) in
   match x with
   | Bottom -> bot
@@ -109,7 +109,7 @@ and meaning = function
     meaning (f x) (* metacomposition rule *)
   | App (operator, operand) ->
     let f = repr (meaning operator) in
-		let x = meaning operand in
+    let x = meaning operand in
     meaning (f x)
 
 and apply x y =
