@@ -109,9 +109,9 @@ let rec meaning = function
   | Obj (Atom _ as x) | Obj (Bottom as x) | Obj (Sequence _ as x) -> x
   | App (Obj (Sequence []), _) ->
     failwith "the application has an empty list as operator"
-  | App (Obj (Sequence (x1 :: _)) as form, operand) ->
+  | App (Obj (Sequence (x1 :: _) as s), operand) ->
     let f = repr x1 in
-    let x = Sequence [meaning form; meaning operand] in
+    let x = Sequence [s; meaning operand] in
     meaning (f x) (* metacomposition rule *)
   | App (operator, operand) ->
     let f = repr (meaning operator) in
