@@ -20,7 +20,7 @@ module Atoms = struct
     List.find (function Atom s' -> s = s' | _ -> false) !alist
 end
 
-(* Primitive functions. Map objects to expressions. *)
+(* Primitive functions. Map objects to objects like FP functions. *)
 
 module Prims = struct
   let selector n = function
@@ -63,19 +63,24 @@ module Prims = struct
     in o
   
   let const c = function Bottom -> Bottom | _ -> c
+
+  let plist = ref []
+
+  let add s f =
+    plist := (Atoms.add s, f) :: !plist
+
+  let find x =
+    List.assq x !plist
+
+  let _ =
+    add "1" (selector 1);
+    add "tail" tail;
+    add "id" identity;
+    add "atom" atom;
+    add "eq" equals;
+    add "null" null;
+    add "rev" reverse
 end
-
-(* Primitives are closures which map objects to objects. *)
-
-let prims = [
-  Atoms.add "1", Prims.selector 1;
-  Atoms.add "tail", Prims.tail;
-  Atoms.add "id", Prims.identity;
-  Atoms.add "atom", Prims.atom;
-  Atoms.add "eq", Prims.equals;
-  Atoms.add "null", Prims.null;
-  Atoms.add "rev", Prims.reverse
-]
 
 (* User defined functions are expressions which map expressions to expressions. *)
 
@@ -92,7 +97,7 @@ let repr x =
   | Bottom -> bot
   | Sequence _ -> failwith "repr was given a sequence as argument"
   | Atom _ as x ->
-    try prim (List.assq x prims)
+    try prim (Prims.find x)
     with Not_found ->
       try apply (List.assq x !defs)
       with Not_found ->
