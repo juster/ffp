@@ -84,7 +84,8 @@ let defs = ref []
 (* The representation function associates objects with the functions they represent.
    The result is a closure which take an object argument and returns an expression. *)
 
-let rec repr x =
+let repr x =
+  let apply x y = App (x, Obj y) in
   let prim f x = Obj (f x) in
   let bot = prim (Prims.const Bottom) in
   match x with
@@ -99,7 +100,7 @@ let rec repr x =
 
 (* The meaning function determines the value of an FFP expression, which is always an object. *)
 
-and meaning = function
+let rec meaning = function
   | Obj (Atom _ as x) | Obj (Bottom as x) | Obj (Sequence _ as x) -> x
   | App (Obj (Sequence []), _) ->
     failwith "the application has an empty list as operator"
@@ -111,6 +112,3 @@ and meaning = function
     let f = repr (meaning operator) in
     let x = meaning operand in
     meaning (f x)
-
-and apply x y =
-  App (x, Obj y)
