@@ -1,4 +1,4 @@
-type obj = Atom of string | Bottom | Sequence of obj list
+type obj = Atom of string | Bytes of string | Bottom | Sequence of obj list
 type expr = Obj of obj | App of expr * expr
 
 module Atoms = struct
@@ -29,11 +29,27 @@ module Prims = struct
         try List.nth l (n-1)
         with Failure _ -> Bottom
       end
+    | Bytes s ->
+      begin
+        try
+          let c = (String.get s (n-1)) in
+          Atom (String.make 1 c)
+        with Invalid_argument _ -> Bottom
+      end
     | _ -> Bottom
   
   let tail = function
     | Sequence (_ :: []) -> Atoms.null
     | Sequence (hd :: tl) -> Sequence tl
+    | Bytes "" -> Atoms.null
+    | Bytes s ->
+      begin
+        try
+          let len = (String.length s) - 1 in
+          let s' = String.sub s 1 len in
+          Bytes s'
+        with Invalid_argument _ -> assert false
+      end
     | _ -> Bottom
   
   let identity x = x
@@ -46,6 +62,8 @@ module Prims = struct
   let equals = function
     | Sequence [(Atom _ as y); (Atom _ as z)] ->
       if y == z then Atoms.truth else Atoms.fallicy
+    | Sequence [(Bytes s); (Bytes s')] ->
+      if s = s' then Atoms.truth else Atoms.fallicy
     | _ ->
       Bottom
 
@@ -56,9 +74,21 @@ module Prims = struct
     | _ -> Atoms.fallicy
 
   let reverse x =
+    let rec revstr s i n =
+      if n == 0 then ()
+      else begin
+        let m = n/2 in
+        String.blit s i s m m;
+        revstr s 0 m; revstr s m (n-m)
+      end
+    in
     let o = match x with
       | Sequence [] -> Atoms.null
       | Sequence l -> Sequence (List.rev l)
+      | Bytes "" -> Atoms.null
+      | Bytes s ->
+        let s' = String.copy s in
+        revstr s' 0 (String.length s'); Bytes s'
       | _ -> Bottom
     in o
   
@@ -94,8 +124,8 @@ let repr x =
   let prim f x = Obj (f x) in
   let bot = prim (Prims.const Bottom) in
   match x with
-  | Bottom -> bot
-  | Sequence _ -> failwith "repr was given a sequence as argument"
+  | Bytes _ | Bottom -> bot
+  | Sequence _ -> assert false
   | Atom _ as x ->
     try prim (Prims.find x)
     with Not_found ->
@@ -106,7 +136,7 @@ let repr x =
 (* The meaning function determines the value of an FFP expression, which is always an object. *)
 
 let rec meaning = function
-  | Obj (Atom _ as x) | Obj (Bottom as x) | Obj (Sequence _ as x) -> x
+  | Obj x -> x
   | App (Obj (Sequence []), _) ->
     failwith "the application has an empty list as operator"
   | App (Obj (Sequence (x1 :: _) as s), operand) ->
