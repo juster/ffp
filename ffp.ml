@@ -79,13 +79,12 @@ module Prims = struct
         s'.[n-i] <- s.[i-1]
       done; s'
     in
-    let o = match x with
-      | Sequence [] -> Atoms.find "_"
-      | Sequence l -> Sequence (List.rev l)
-      | Bytes "" -> Atoms.find "_"
-      | Bytes s -> Bytes (revstr s)
-      | _ -> Bottom
-    in o
+    match x with
+    | Sequence [] -> Atoms.find "_"
+    | Sequence l -> Sequence (List.rev l)
+    | Bytes "" -> Atoms.find "_"
+    | Bytes s -> Bytes (revstr s)
+    | _ -> Bottom
 
   let const c = function Bottom -> Bottom | _ -> c
 
@@ -141,6 +140,6 @@ let rec mapseq f l l' =
 (* The meaning function determines the value of an FFP expression, which is always an object. *)
 
 let rec meaning = function
-  | App (x, y) -> (repr (meaning x)) (meaning y)
+  | App (x, y) -> meaning (repr (meaning x)) (meaning y)
   | Sequence l -> mapseq meaning l []
   | (Atom _ | Bottom | Bytes _) as x -> x
