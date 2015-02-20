@@ -15,7 +15,7 @@ module Atoms = struct
     List.assoc s !alist
 
   let _ =
-    List.iter (fun s -> ignore (add s)) [ "_"; "T"; "F"; "?" ]
+    ignore (List.map add [ "_"; "T"; "F"; "?" ])
 end
 
 (* Primitive functions. Map objects to objects like FP functions. *)
