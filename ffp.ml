@@ -90,6 +90,17 @@ module Prims = struct
     | Sequence [x; y] -> App (x, y)
     | _ -> Bottom
 
+  let every x =
+    let rec every' x l l' =
+      match l with
+      | Bottom :: _ -> Bottom
+      | [] -> Sequence (List.rev l')
+      | hd :: tl -> every' x tl (App (x, hd) :: l')
+    in
+    match x with
+    | Sequence [x1; Sequence l] -> every' x1 l []
+    | _ -> Bottom
+
   let const c = function Bottom -> Bottom | _ -> c
 
   let plist = ref []
@@ -108,7 +119,8 @@ module Prims = struct
     add "eq" equals;
     add "null" null;
     add "rev" reverse;
-    add "apply" apply
+    add "apply" apply;
+    add "every" every;
 end
 
 (* User defined functions are expressions which map expressions to expressions. *)
