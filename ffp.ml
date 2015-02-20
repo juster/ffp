@@ -3,6 +3,20 @@ type expr =
   App of expr * expr |
   Bytes of string
 
+(* Bottom preserving application of a function to every sub-expression of a sequence. *)
+
+let mapseq f l =
+  let rec mapseq' f l l' =
+    match l with
+    | [] -> Sequence (List.rev l')
+    | Bottom :: _ -> Bottom
+    | hd :: tl ->
+      match f hd with
+      | Bottom -> Bottom
+      | x -> mapseq' f tl (x :: l')
+  in
+  mapseq' f l []
+
 module Atoms = struct
   let alist = ref []
   let n = ref 0
@@ -91,14 +105,8 @@ module Prims = struct
     | _ -> Bottom
 
   let every x =
-    let rec every' x l l' =
-      match l with
-      | Bottom :: _ -> Bottom
-      | [] -> Sequence (List.rev l')
-      | hd :: tl -> every' x tl (App (x, hd) :: l')
-    in
     match x with
-    | Sequence [x1; Sequence l] -> every' x1 l []
+    | Sequence [x1; Sequence y] -> mapseq (fun y' -> App (x1, y')) y
     | _ -> Bottom
 
   let const c = function Bottom -> Bottom | _ -> c
@@ -144,19 +152,9 @@ let rec repr = function
   | Sequence [] | App (_, _) ->
     assert false
 
-(* Bottom preserving application of a function to every sub-expression of a sequence. *)
-
-let rec mapseq f l l' =
-  match l with
-  | [] -> Sequence (List.rev l')
-  | hd :: tl ->
-    match f hd with
-    | Bottom -> Bottom
-    | x -> mapseq f tl (x :: l')
-
 (* The meaning function determines the value of an FFP expression, which is always an object. *)
 
 let rec meaning = function
   | App (x, y) -> meaning ((repr (meaning x)) (meaning y))
-  | Sequence l -> mapseq meaning l []
+  | Sequence l -> mapseq meaning l
   | (Atom _ | Bottom | Bytes _) as x -> x
