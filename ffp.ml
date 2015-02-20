@@ -72,21 +72,18 @@ module Prims = struct
     | _ -> Atoms.find "F"
 
   let reverse x =
-    let rec revstr s i n =
-      if n <= 1 then ()
-      else begin
-        let m = n/2 in
-        String.blit s i s m m;
-        revstr s 0 m; revstr s m (n-m)
-      end
+    let rec revstr s =
+      let n = String.length s in
+      let s' = String.create n in
+      for i = 1 to n do
+        s'.[n-i] <- s.[i-1]
+      done; s'
     in
     let o = match x with
       | Sequence [] -> Atoms.find "_"
       | Sequence l -> Sequence (List.rev l)
       | Bytes "" -> Atoms.find "_"
-      | Bytes s ->
-        let s' = String.copy s in
-        revstr s' 0 (String.length s'); Bytes s'
+      | Bytes s -> Bytes (revstr s)
       | _ -> Bottom
     in o
 
