@@ -86,6 +86,10 @@ module Prims = struct
     | Bytes s -> Bytes (revstr s)
     | _ -> Bottom
 
+  let apply = function
+    | Sequence [x; y] -> App (x, y)
+    | _ -> Bottom
+
   let const c = function Bottom -> Bottom | _ -> c
 
   let plist = ref []
@@ -103,7 +107,8 @@ module Prims = struct
     add "atom" atom;
     add "eq" equals;
     add "null" null;
-    add "rev" reverse
+    add "rev" reverse;
+    add "apply" apply
 end
 
 (* User defined functions are expressions which map expressions to expressions. *)
@@ -140,6 +145,6 @@ let rec mapseq f l l' =
 (* The meaning function determines the value of an FFP expression, which is always an object. *)
 
 let rec meaning = function
-  | App (x, y) -> meaning (repr (meaning x)) (meaning y)
+  | App (x, y) -> meaning ((repr (meaning x)) (meaning y))
   | Sequence l -> mapseq meaning l []
   | (Atom _ | Bottom | Bytes _) as x -> x
