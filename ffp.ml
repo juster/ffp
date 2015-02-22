@@ -28,6 +28,9 @@ module Atoms = struct
   let find s =
     List.assoc s !alist
 
+  let of_string s =
+    try find s with Not_found -> add s
+
   let _ =
     ignore (List.map add [ "_"; "T"; "F"; "?" ])
 end
