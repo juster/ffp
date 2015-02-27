@@ -1,4 +1,3 @@
-open Printf
 open Ffp
 
 type reader = { buffer:string; mutable next:char option; n:int; mutable i:int }
