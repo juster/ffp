@@ -65,6 +65,7 @@ module Prims = struct
           Bytes s'
         with Invalid_argument _ -> assert false
       end
+    | Atom _ as a when a = Atoms.find "_" -> a
     | _ -> Bottom
   
   let identity x = x
@@ -76,7 +77,7 @@ module Prims = struct
   
   let equals = function
     | Sequence [Atom _ as y; Atom _ as z] ->
-      Atoms.find (if y == z then "T" else "F")
+      Atoms.find (if y = z then "T" else "F")
     | Sequence [Bytes s; Bytes s'] ->
       Atoms.find (if s = s' then "T" else "F")
     | _ ->
@@ -84,7 +85,7 @@ module Prims = struct
 
   let null = function
     | Bottom -> Bottom
-    | Atom _ as a -> if a == Atoms.find "_" then Atoms.find "T" else Atoms.find "F"
+    | Atom _ as a -> Atoms.find (if a = Atoms.find "_" then "T" else "F")
     | Sequence [] -> Atoms.find "T"
     | _ -> Atoms.find "F"
 
@@ -101,6 +102,7 @@ module Prims = struct
     | Sequence l -> Sequence (List.rev l)
     | Bytes "" -> Atoms.find "_"
     | Bytes s -> Bytes (revstr s)
+    | Atom _ as a when a = Atoms.find "_" -> a
     | _ -> Bottom
 
   let apply = function
@@ -110,6 +112,7 @@ module Prims = struct
   let every x =
     match x with
     | Sequence [x1; Sequence y] -> mapseq (fun y' -> App (x1, y')) y
+    | Atom _ as a when a = Atoms.find "_" -> a
     | _ -> Bottom
 
   let const c = function Bottom -> Bottom | _ -> c
