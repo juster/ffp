@@ -9,9 +9,9 @@ let badsyn r =
   | Some _ -> raise (BadSyntax (r.i-1))
 
 let pump r =
-  if r.i >= r.n then (
+  if r.i >= r.n then
     r.next <- None
-  ) else (
+  else (
     r.next <- Some r.buffer.[r.i];
     r.i <- r.i + 1
   )
@@ -20,66 +20,71 @@ let create s =
   let r = { buffer = s; next = None; n = String.length s; i = 0 } in
   pump r; r
 
+(* Retrieve the next character or fail with a syntax error. *)
+
 let nextchar r =
   match r.next with
   | None -> badsyn r
   | Some ch -> ch
 
-let atomchar ch =
-  match ch with 'a'..'z' | 'A'..'Z' | '0'..'9' | '_' -> true | _ -> false
+let atomnext r =
+  match r.next with
+  | None -> false
+  | Some ('a'..'z' | 'A'..'Z' | '0'..'9') -> true
+  | Some _ -> false
 
 let skip r ch =
-  if (nextchar r) = ch then pump r else badsyn r
+  match r.next with
+  | None -> false
+  | Some ch' ->
+    if ch = ch' then
+      (pump r; true)
+    else
+      false
 
 let rec skipws r =
-  match r.next with
-  | None -> ()
-  | Some ' ' -> pump r; skipws r
-  | Some _ -> ()
+  while skip r ' ' do () done
+
+let next r ch =
+  if not (skip r ch) then badsyn r else ()
 
 let rec expr r =
   skipws r;
-  match nextchar r with
-  | '<' -> sequence r
-  | ch ->
-    if atomchar ch then (
-      let a = atom r (Buffer.create 16) in
-      match r.next with
-      | Some ':' -> application r a
-      | None | Some _ -> a
-    ) else badsyn r
+  if skip r '<' then
+    sequence r
+  else if atomnext r then
+    let a = atom r in
+    if skip r ':' then
+      application r a
+    else
+      a
+  else
+    badsyn r
 
 and sequence r =
-  skip r '<';
   skipws r;
-  if nextchar r = '>' then (
-    pump r; Sequence []
-  ) else (
+  if skip r '>' then
+    Sequence []
+  else
     let s = seq r [] in
-    skip r '>';
+    next r '>';
     Sequence s
-  )
 
 and seq r lst =
   let lst = (expr r) :: lst in
   skipws r;
-  if nextchar r = ','
-  then (pump r; seq r lst)
-  else List.rev lst
+  if skip r ',' then
+    seq r lst
+  else
+    List.rev lst
 
-and atom r buf =
-  let newatom buf =
-    Atoms.of_string (Buffer.contents buf)
-  in
-  match r.next with
-  | None -> newatom buf
-  | Some ch ->
-    if not (atomchar ch) then newatom buf
-    else (
-      pump r;
-      atom r (Buffer.add_char buf ch; buf)
-    )
+and atom r =
+  let b = Buffer.create 16 in
+  Buffer.add_char b (nextchar r); pump r; (* must be at least 1 char *)
+  while atomnext r do
+    Buffer.add_char b (nextchar r); pump r;
+  done;
+  Atoms.of_string (Buffer.contents b)
 
 and application r a =
-  skip r ':';
   App (a, expr r)
