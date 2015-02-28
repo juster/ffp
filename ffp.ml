@@ -32,7 +32,8 @@ end
 
 let alist = Atoms.create ()
 
-(* Bottom preserving application of a function to every sub-expression of a sequence. *)
+(* Bottom preserving application of a function to every sub-expression of a
+   sequence. *)
 
 let mapseq f l =
   let rec mapseq' f l l' =
@@ -146,8 +147,9 @@ module Prims = struct
     add "every" every;
 end
 
-(* The representation function associates objects with the functions they represent.
-   The result is a closure which take an object argument and returns an expression. *)
+(* The representation function associates objects with the functions they
+   represent. The result is a closure which take an object argument and returns
+   an expression. *)
 
 let rec repr = function
   | Atom x ->
@@ -161,7 +163,8 @@ let rec repr = function
   | Sequence [] | App (_, _) ->
     assert false
 
-(* The meaning function determines the value of an FFP expression, which is always an object. *)
+(* The meaning function determines the value of an FFP expression, which is
+   always an object. *)
 
 let rec meaning = function
   | App (x, y) -> meaning ((repr (meaning x)) (meaning y))
