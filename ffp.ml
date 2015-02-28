@@ -3,6 +3,35 @@ type expr =
   App of expr * expr |
   Bytes of string
 
+module Atoms = struct
+  type t = { mutable alist:(string * int) list; mutable n:int }
+
+  let null = 0
+  let truth = 1
+  let fallicy = 2
+  let default = 3
+
+  let create () =
+    { alist = [ "?", null; "T", truth; "F", fallicy; "#", default ]; n = 4 }
+
+  let add l s =
+    let a = l.n in
+    l.alist <- (s, a) :: l.alist;
+    l.n <- l.n + 1;
+    a
+
+  let find l s =
+    List.assoc s l.alist
+
+  let to_string l x =
+    fst (List.find (fun (s, y) -> x = y) l.alist)
+
+  let of_boolean b =
+    if b then truth else fallicy
+end
+
+let alist = Atoms.create ()
+
 (* Bottom preserving application of a function to every sub-expression of a sequence. *)
 
 let mapseq f l =
@@ -17,24 +46,6 @@ let mapseq f l =
   in
   mapseq' f l []
 
-module Atoms = struct
-  let alist = ref []
-  let n = ref 0
-
-  let add s =
-    let a = Atom !n in
-    alist := (s, a) :: !alist; incr n; a
-
-  let find s =
-    List.assoc s !alist
-
-  let of_string s =
-    try find s with Not_found -> add s
-
-  let _ =
-    ignore (List.map add [ "_"; "T"; "F"; "?" ])
-end
-
 (* Primitive functions. Map objects to objects like FP functions. *)
 
 module Prims = struct
@@ -47,16 +58,16 @@ module Prims = struct
     | Bytes s ->
       begin
         try
-          let c = (String.get s (n-1)) in
-          Atoms.add (String.make 1 c)
+          let s = String.make 1 (String.get s (n-1)) in
+          Atom (Atoms.add alist s)
         with Invalid_argument _ -> Bottom
       end
     | _ -> Bottom
   
   let tail = function
-    | Sequence (_ :: []) -> Atoms.find "_"
+    | Sequence (_ :: []) -> Atom (Atoms.null)
     | Sequence (hd :: tl) -> Sequence tl
-    | Bytes "" -> Atoms.find "_"
+    | Bytes "" -> Atom (Atoms.null)
     | Bytes s ->
       begin
         try
@@ -65,29 +76,27 @@ module Prims = struct
           Bytes s'
         with Invalid_argument _ -> assert false
       end
-    | Atom _ as a when a = Atoms.find "_" -> a
+    | Atom x as a when x = Atoms.null -> a
     | _ -> Bottom
   
   let identity x = x
   
   let atom = function
-    | Atom _ -> Atoms.find "T"
+    | Atom _ -> Atom Atoms.truth
     | Bottom -> Bottom
-    | _ -> Atoms.find "F"
+    | _ -> Atom Atoms.fallicy
   
   let equals = function
-    | Sequence [Atom _ as y; Atom _ as z] ->
-      Atoms.find (if y = z then "T" else "F")
-    | Sequence [Bytes s; Bytes s'] ->
-      Atoms.find (if s = s' then "T" else "F")
+    | Sequence [Atom x; Atom y] -> Atom (Atoms.of_boolean (x = y))
+    | Sequence [Bytes s; Bytes s'] -> Atom (Atoms.of_boolean (s = s'))
     | _ ->
       Bottom
 
   let null = function
     | Bottom -> Bottom
-    | Atom _ as a -> Atoms.find (if a = Atoms.find "_" then "T" else "F")
-    | Sequence [] -> Atoms.find "T"
-    | _ -> Atoms.find "F"
+    | Atom x -> Atom (Atoms.of_boolean (x = Atoms.null))
+    | Sequence [] -> Atom Atoms.truth
+    | _ -> Atom Atoms.fallicy
 
   let reverse x =
     let rec revstr s =
@@ -98,11 +107,11 @@ module Prims = struct
       done; s'
     in
     match x with
-    | Sequence [] -> Atoms.find "_"
+    | Sequence [] -> Atom Atoms.null
     | Sequence l -> Sequence (List.rev l)
-    | Bytes "" -> Atoms.find "_"
+    | Bytes "" -> Atom Atoms.null
     | Bytes s -> Bytes (revstr s)
-    | Atom _ as a when a = Atoms.find "_" -> a
+    | Atom x as a when x = Atoms.null -> a
     | _ -> Bottom
 
   let apply = function
@@ -112,7 +121,7 @@ module Prims = struct
   let every x =
     match x with
     | Sequence [x1; Sequence y] -> mapseq (fun y' -> App (x1, y')) y
-    | Atom _ as a when a = Atoms.find "_" -> a
+    | Atom x as a when x = Atoms.null -> a
     | _ -> Bottom
 
   let const c = function Bottom -> Bottom | _ -> c
@@ -120,7 +129,7 @@ module Prims = struct
   let plist = ref []
 
   let add s f =
-    plist := (Atoms.add s, f) :: !plist
+    plist := (Atoms.add alist s, f) :: !plist
 
   let find a =
     List.assq a !plist
@@ -137,19 +146,13 @@ module Prims = struct
     add "every" every;
 end
 
-(* User defined functions are expressions which map expressions to expressions. *)
-
-let defs = ref []
-
 (* The representation function associates objects with the functions they represent.
    The result is a closure which take an object argument and returns an expression. *)
 
 let rec repr = function
-  | Atom _ as x ->
+  | Atom x ->
     begin
-      try Prims.find x with Not_found ->
-        try List.assq x !defs with Not_found ->
-          (fun _ -> Bottom)
+      try Prims.find x with Not_found -> (fun _ -> Bottom)
     end
   | Sequence (x :: _) as s ->
     (fun y -> (repr x) (Sequence [s; y]))

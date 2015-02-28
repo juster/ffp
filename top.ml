@@ -37,4 +37,6 @@ and atom r =
   while atomnext r do
     Buffer.add_char b (nextchar r); pump r;
   done;
-  Atoms.of_string (Buffer.contents b)
+  let s = Buffer.contents b in
+  let x = try Atoms.find alist s with Not_found -> Atoms.add alist s in
+  Atom x
