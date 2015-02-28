@@ -8,7 +8,7 @@ let rec expr r =
   else if atomnext r then
     let a = atom r in
     if skip r ':' then
-      application r a
+      App (a, expr r)
     else
       a
   else
@@ -38,6 +38,3 @@ and atom r =
     Buffer.add_char b (nextchar r); pump r;
   done;
   Atoms.of_string (Buffer.contents b)
-
-and application r a =
-  App (a, expr r)
