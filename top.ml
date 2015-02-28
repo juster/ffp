@@ -40,7 +40,9 @@ and cond r c =
 
 and expr r =
   skipws r;
-  if skip r '<' then
+  if skip r '(' then
+    subexp r
+  else if skip r '<' then
     sequence r
   else if atomnext r then
     let a = atom r in
@@ -77,5 +79,12 @@ and atom r =
   let s = Buffer.contents b in
   let x = try Atoms.find alist s with Not_found -> Atoms.add alist s in
   Atom x
+
+and subexp r =
+  skipws r;
+  let e = term r in
+  skipws r;
+  next r ')';
+  e
 
 let read = term
