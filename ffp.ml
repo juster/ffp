@@ -1,7 +1,8 @@
 type expr =
   Bottom | Atom of int | Sequence of expr list |
   App of expr * expr |
-  Bytes of string
+  Bytes of string |
+  Cond of expr * expr * expr
 
 module Atoms = struct
   type t = { mutable alist:(string * int) list; mutable n:int }
@@ -160,7 +161,7 @@ let rec repr = function
     (fun y -> (repr x) (Sequence [s; y]))
   | Bytes _ | Bottom ->
     (fun _ -> Bottom)
-  | Sequence [] | App (_, _) ->
+  | Sequence [] | App (_, _) | Cond (_, _, _) ->
     assert false
 
 (* The meaning function determines the value of an FFP expression, which is
@@ -170,3 +171,9 @@ let rec meaning = function
   | App (x, y) -> meaning ((repr (meaning x)) (meaning y))
   | Sequence l -> mapseq meaning l
   | (Atom _ | Bottom | Bytes _) as x -> x
+  | Cond (c, t, f) ->
+    match meaning c with
+    | Atom x when x = Atoms.truth -> meaning t
+    | Atom x when x = Atoms.fallicy -> meaning f
+    | _ -> Bottom
+

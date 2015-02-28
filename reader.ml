@@ -14,6 +14,10 @@ let pump r =
     r.i <- r.i + 1
   )
 
+let backup r =
+  if r.i <= 1 then assert false
+  else (r.i <- r.i - 1; r.next <- Some r.buffer.[r.i - 1])
+
 let create s =
   let r = { buffer = s; next = None; n = String.length s; i = 0 } in
   pump r; r

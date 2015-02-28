@@ -1,7 +1,44 @@
 open Reader
 open Ffp
 
-let rec expr r =
+(*
+term -> expr | cond
+cond -> expr `-' `>' expr `|' expr
+expr -> atom | seq | subexpr
+atom -> [a-zA-Z_*?#]+
+seq -> `<' `>' | `<' seqlist `>'
+seqlist -> expr `,' seqlist | expr
+subexpr -> `(' term `)'
+*)
+
+let rec term r =
+  let e = expr r in
+  skipws r;
+  match r.next with
+  | Some '-' ->
+    begin
+      pump r;
+      match r.next with
+      | Some '>' ->
+        pump r;
+        cond r e
+      | _ ->
+        backup r;
+      e
+    end
+  | _ ->
+    e
+
+and cond r c =
+  skipws r;
+  let t = expr r in
+  skipws r;
+  next r '|';
+  skipws r;
+  let f = expr r in
+  Cond (c, t, f)
+
+and expr r =
   skipws r;
   if skip r '<' then
     sequence r
@@ -40,3 +77,5 @@ and atom r =
   let s = Buffer.contents b in
   let x = try Atoms.find alist s with Not_found -> Atoms.add alist s in
   Atom x
+
+let read = term
