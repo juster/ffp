@@ -44,6 +44,20 @@ let skip r ch =
     else
       false
 
+let skipstr r s =
+  let rec skipstr' r s i n =
+    if i >= n then true
+    else match r.next with
+    | Some ch when ch = s.[i] ->
+      pump r;
+      if skipstr' r s (succ i) n then
+        true
+      else
+        (backup r; false)
+    | _ -> false
+  in
+  skipstr' r s 0 (String.length s)
+
 let rec skipws r =
   while skip r ' ' do () done
 

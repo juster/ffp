@@ -23,19 +23,9 @@ selch -> '0'..'9'
 let rec term r =
   let e = expr r in
   skipws r;
-  match r.next with
-  | Some '-' ->
-    begin
-      pump r;
-      match r.next with
-      | Some '>' ->
-        pump r;
-        cond r e
-      | _ ->
-        backup r;
-      e
-    end
-  | _ ->
+  if skipstr r "->" then
+    cond r e
+  else
     e
 
 and cond r c =
