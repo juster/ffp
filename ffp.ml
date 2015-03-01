@@ -2,7 +2,8 @@ type expr =
   Bottom | Atom of int | Sequence of expr list |
   App of expr * expr |
   Bytes of string |
-  Cond of expr * expr * expr
+  Cond of expr * expr * expr |
+  Comp of expr * expr
 
 module Atoms = struct
   type t = { mutable alist:(string * int) list; mutable n:int }
@@ -168,7 +169,9 @@ let rec repr = function
    always an object. *)
 
 let rec meaning = function
+  | App (Comp (f, g), x) -> meaning (App (f, App (g, x)))
   | App (x, y) -> meaning ((repr (meaning x)) (meaning y))
+  | Comp (_, _) -> assert false
   | Sequence l -> mapseq meaning l
   | (Atom _ | Bottom | Bytes _) as x -> x
   | Cond (c, t, f) ->

@@ -4,7 +4,7 @@ open Ffp
 (*
 term -> expr | cond
 cond -> expr `-' `>' term `|' term
-expr -> object | subexpr | app
+expr -> object | subexpr | app | compose
 
 object -> atom | seq
 atom -> atomch atom | atomch
@@ -14,6 +14,7 @@ seqlist -> object `,' seqlist | object
 
 subexpr -> `(' term `)'
 app -> atom `:' expr
+compose -> atom `|' `>' expr
 
 every -> '*' expr
 selector -> selch selector | selch
@@ -42,7 +43,15 @@ and expr r =
   if skip r '(' then
     subexp r
   else match obj r with
-    | Atom _ as a when skip r ':' -> App (a, expr r)
+    | Atom _ as a ->
+      begin
+        if skip r ':' then
+          App (a, expr r)
+        else if (skipws r; skipstr r "|>") then
+          (skipws r; Comp (expr r, a))
+        else
+          a
+      end
     | e -> e
 
 and obj r =
