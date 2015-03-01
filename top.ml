@@ -3,12 +3,17 @@ open Ffp
 
 (*
 term -> expr | cond
-cond -> expr `-' `>' expr `|' expr
-expr -> atom | seq | subexpr
-atom -> [a-zA-Z_*?#]+
+cond -> expr `-' `>' term `|' term
+expr -> every | selector | atom | seq | subexpr | app
+atom -> atomch atom | atomch
+atomch -> `a'..`z' | `A'..`Z' | `_' | `*' | `?' | `#'
 seq -> `<' `>' | `<' seqlist `>'
 seqlist -> expr `,' seqlist | expr
 subexpr -> `(' term `)'
+app -> expr `:' expr
+every -> '*' expr
+selector -> selch selector | selch
+selch -> '0'..'9'
 *)
 
 let rec term r =
@@ -31,11 +36,11 @@ let rec term r =
 
 and cond r c =
   skipws r;
-  let t = expr r in
+  let t = term r in
   skipws r;
   next r '|';
   skipws r;
-  let f = expr r in
+  let f = term r in
   Cond (c, t, f)
 
 and expr r =
