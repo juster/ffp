@@ -4,13 +4,17 @@ open Ffp
 (*
 term -> expr | cond
 cond -> expr `-' `>' term `|' term
-expr -> every | selector | atom | seq | subexpr | app
+expr -> object | subexpr | app
+
+object -> atom | seq
 atom -> atomch atom | atomch
-atomch -> `a'..`z' | `A'..`Z' | `_' | `*' | `?' | `#'
+atomch -> `a'..`z' | `A'..`Z' | `_' | `?' | `#'
 seq -> `<' `>' | `<' seqlist `>'
-seqlist -> expr `,' seqlist | expr
+seqlist -> object `,' seqlist | object
+
 subexpr -> `(' term `)'
-app -> expr `:' expr
+app -> atom `:' expr
+
 every -> '*' expr
 selector -> selch selector | selch
 selch -> '0'..'9'
@@ -47,16 +51,15 @@ and expr r =
   skipws r;
   if skip r '(' then
     subexp r
-  else if skip r '<' then
+  else match obj r with
+    | Atom _ as a when skip r ':' -> App (a, expr r)
+    | e -> e
+
+and obj r =
+  if skip r '<' then
     sequence r
-  else if atomnext r then
-    let a = atom r in
-    if skip r ':' then
-      App (a, expr r)
-    else
-      a
   else
-    badsyn r
+    atom r
 
 and sequence r =
   skipws r;
@@ -68,7 +71,8 @@ and sequence r =
     Sequence s
 
 and seq r lst =
-  let lst = (expr r) :: lst in
+  skipws r;
+  let lst = (obj r) :: lst in
   skipws r;
   if skip r ',' then
     seq r lst
