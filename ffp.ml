@@ -6,33 +6,29 @@ type expr =
   Comp of expr * expr
 
 module Atoms = struct
-  type t = { mutable alist:(string * int) list; mutable n:int }
-
   let null = 0
   let truth = 1
   let fallicy = 2
   let default = 3
 
-  let create () =
-    { alist = [ "?", null; "T", truth; "F", fallicy; "#", default ]; n = 4 }
+  let alist = ref [ "?", null; "T", truth; "F", fallicy; "#", default ]
+  let n = ref 4
 
-  let add l s =
-    let a = l.n in
-    l.alist <- (s, a) :: l.alist;
-    l.n <- l.n + 1;
+  let add s =
+    let a = !n in
+    alist := (s, a) :: !alist;
+    incr n;
     a
 
-  let find l s =
-    List.assoc s l.alist
+  let find s =
+    List.assoc s !alist
 
-  let to_string l x =
-    fst (List.find (fun (s, y) -> x = y) l.alist)
+  let to_string x =
+    fst (List.find (fun (s, y) -> x = y) !alist)
 
   let of_boolean b =
     if b then truth else fallicy
 end
-
-let alist = Atoms.create ()
 
 (* Bottom preserving application of a function to every sub-expression of a
    sequence. *)
@@ -62,7 +58,7 @@ module Prims = struct
       begin
         try
           let s = String.make 1 (String.get s (n-1)) in
-          Atom (Atoms.add alist s)
+          Atom (Atoms.add s)
         with Invalid_argument _ -> Bottom
       end
     | _ -> Bottom
@@ -132,7 +128,7 @@ module Prims = struct
   let plist = ref []
 
   let add s f =
-    plist := (Atoms.add alist s, f) :: !plist
+    plist := (Atoms.add s, f) :: !plist
 
   let find a =
     List.assq a !plist

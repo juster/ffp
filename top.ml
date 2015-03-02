@@ -86,7 +86,7 @@ and atom r =
   match Buffer.contents b with
   | "" -> badsyn r
   | s ->
-    let x = try Atoms.find alist s with Not_found -> Atoms.add alist s in
+    let x = try Atoms.find s with Not_found -> Atoms.add s in
     Atom x
 
 and subexp r =
