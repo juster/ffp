@@ -25,9 +25,6 @@ module Atoms = struct
 
   let to_string x =
     fst (List.find (fun (s, y) -> x = y) !alist)
-
-  let of_boolean b =
-    if b then truth else fallicy
 end
 
 (* Bottom preserving application of a function to every sub-expression of a
@@ -48,6 +45,13 @@ let mapseq f l =
 (* Primitive functions. Map objects to objects like FP functions. *)
 
 module Prims = struct
+  let nullat = Atom Atoms.null
+  let truth = Atom Atoms.truth
+  let fallicy = Atom Atoms.fallicy
+
+  let boolean b =
+    if b then truth else fallicy
+
   let selector n = function
     | Sequence l ->
       begin
@@ -64,9 +68,9 @@ module Prims = struct
     | _ -> Bottom
   
   let tail = function
-    | Sequence (_ :: []) -> Atom (Atoms.null)
+    | Sequence (_ :: []) -> nullat
     | Sequence (hd :: tl) -> Sequence tl
-    | Bytes "" -> Atom (Atoms.null)
+    | Bytes "" -> nullat
     | Bytes s ->
       begin
         try
@@ -75,27 +79,27 @@ module Prims = struct
           Bytes s'
         with Invalid_argument _ -> assert false
       end
-    | Atom x as a when x = Atoms.null -> a
+    | Atom _ as a when a = nullat -> a
     | _ -> Bottom
   
   let identity x = x
   
   let atom = function
-    | Atom _ -> Atom Atoms.truth
+    | Atom _ -> truth
     | Bottom -> Bottom
-    | _ -> Atom Atoms.fallicy
+    | _ -> fallicy
   
   let equals = function
-    | Sequence [Atom x; Atom y] -> Atom (Atoms.of_boolean (x = y))
-    | Sequence [Bytes s; Bytes s'] -> Atom (Atoms.of_boolean (s = s'))
+    | Sequence [Atom x; Atom y] -> boolean (x = y)
+    | Sequence [Bytes s; Bytes s'] -> boolean (s = s')
     | _ ->
       Bottom
 
   let null = function
     | Bottom -> Bottom
-    | Atom x -> Atom (Atoms.of_boolean (x = Atoms.null))
-    | Sequence [] -> Atom Atoms.truth
-    | _ -> Atom Atoms.fallicy
+    | Atom _ as x -> boolean (x = nullat)
+    | Sequence [] -> truth
+    | _ -> fallicy
 
   let reverse x =
     let rec revstr s =
@@ -106,11 +110,11 @@ module Prims = struct
       done; s'
     in
     match x with
-    | Sequence [] -> Atom Atoms.null
+    | Sequence [] -> nullat
     | Sequence l -> Sequence (List.rev l)
-    | Bytes "" -> Atom Atoms.null
+    | Bytes "" -> nullat
     | Bytes s -> Bytes (revstr s)
-    | Atom x as a when x = Atoms.null -> a
+    | Atom _ as a when a = nullat -> a
     | _ -> Bottom
 
   let apply = function
@@ -120,7 +124,7 @@ module Prims = struct
   let every x =
     match x with
     | Sequence [x1; Sequence y] -> mapseq (fun y' -> App (x1, y')) y
-    | Atom x as a when x = Atoms.null -> a
+    | Atom _ as a when a = nullat -> a
     | _ -> Bottom
 
   let const c = function Bottom -> Bottom | _ -> c
@@ -158,7 +162,7 @@ let rec repr = function
     (fun y -> (repr x) (Sequence [s; y]))
   | Bytes _ | Bottom ->
     (fun _ -> Bottom)
-  | Sequence [] | App (_, _) | Cond (_, _, _) ->
+  | Sequence [] | App (_, _) | Cond (_, _, _) | Comp (_, _) ->
     assert false
 
 (* The meaning function determines the value of an FFP expression, which is
