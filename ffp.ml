@@ -121,12 +121,6 @@ module Prims = struct
     | Sequence [x; y] -> App (x, y)
     | _ -> Bottom
 
-  let every x =
-    match x with
-    | Sequence [x1; Sequence y] -> mapseq (fun y' -> App (x1, y')) y
-    | Atom _ as a when a = nullat -> a
-    | _ -> Bottom
-
   let const c = function Bottom -> Bottom | _ -> c
 
   let plist = ref []
@@ -146,7 +140,6 @@ module Prims = struct
     add "null" null;
     add "rev" reverse;
     add "apply" apply;
-    add "every" every;
 end
 
 (* The representation function associates objects with the functions they
