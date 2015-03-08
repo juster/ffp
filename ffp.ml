@@ -166,7 +166,8 @@ end
 let rec repr = function
   | Atom x ->
     begin
-      try Prims.find x with Not_found -> (fun _ -> Bottom)
+      try Prims.find x with Not_found ->
+        try Forms.find x with Not_found -> (fun _ -> Bottom)
     end
   | Sequence (x :: _) as s ->
     (fun y -> (repr x) (Sequence [s; y]))
