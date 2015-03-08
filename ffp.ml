@@ -169,6 +169,6 @@ let rec meaning = function
   | (Atom _ | Bottom | Bytes _) as x -> x
   | App (Cond (c, t, f), x) ->
     match meaning (App (c, x)) with
-    | Atom x when x = Atoms.truth -> meaning (App (t, x))
-    | Atom x when x = Atoms.fallicy -> meaning (App (f, x))
+    | Atom i when i = Atoms.truth -> meaning (App (t, x))
+    | Atom i when i = Atoms.fallicy -> meaning (App (f, x))
     | _ -> Bottom
