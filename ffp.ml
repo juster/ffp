@@ -180,12 +180,14 @@ let rec repr = function
 
 let rec meaning = function
   | App (Comp (f, g), x) -> meaning (App (f, App (g, x)))
+  | App (Cond (c, t, f), x) ->
+    begin
+      match meaning (App (c, x)) with
+      | Atom i when i = Atoms.truth -> meaning (App (t, x))
+      | Atom i when i = Atoms.fallicy -> meaning (App (f, x))
+      | _ -> Bottom
+    end
   | App (x, y) -> meaning ((repr (meaning x)) (meaning y))
   | Comp (_, _) | Cond (_, _, _) -> assert false
   | Sequence l -> mapseq meaning l
   | (Atom _ | Bottom | Bytes _) as x -> x
-  | App (Cond (c, t, f), x) ->
-    match meaning (App (c, x)) with
-    | Atom i when i = Atoms.truth -> meaning (App (t, x))
-    | Atom i when i = Atoms.fallicy -> meaning (App (f, x))
-    | _ -> Bottom
