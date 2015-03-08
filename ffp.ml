@@ -145,6 +145,20 @@ module Prims = struct
     add "apply" apply;
 end
 
+(* Function forms. *)
+
+module Forms = struct
+  let every = Atoms.next ()
+
+  let flist = ref []
+
+  let add i expr =
+    flist := (i, expr) :: !flist
+
+  let find i =
+    List.assq i !flist
+end
+
 (* The representation function associates objects with the functions they
    represent. The result is a closure which take an object argument and returns
    an expression. *)

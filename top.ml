@@ -2,8 +2,9 @@ open Reader
 open Ffp
 
 (*
-term -> expr | cond
+term -> expr | cond |> compose
 cond -> expr `-' `>' term `|' term
+compose -> expr `|' `>' expr
 expr -> object | subexpr | app | compose | every
 
 object -> atom | seq
@@ -14,7 +15,6 @@ seqlist -> object `,' seqlist | object
 
 subexpr -> `(' term `)'
 app -> atom `:' expr
-compose -> atom `|' `>' expr
 
 every -> '*' atom
 selector -> selch selector | selch
@@ -42,7 +42,7 @@ and expr r =
   skipws r;
   if skip r '(' then
     subexp r
-  if skip r '*' then
+  else if skip r '*' then
     every r
   else match obj r with
     | Atom _ as a ->
@@ -99,7 +99,6 @@ and subexp r =
   e
 
 and every r =
-  let i = Atoms.find "every" in
-  Sequence [ Atom i; atom r ]
+  Sequence [ Atom Forms.every; atom r ]
 
 let read = term
