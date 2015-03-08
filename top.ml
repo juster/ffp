@@ -4,10 +4,10 @@ open Ffp
 (*
 term -> expr | cond
 cond -> expr `-' `>' term `|' term
-expr -> object | subexpr | app | compose
+expr -> object | subexpr | app | compose | every
 
 object -> atom | seq
-atom -> atomch atom | atomch
+atom -> {atomch}
 atomch -> `a'..`z' | `A'..`Z' | `_' | `?' | `#'
 seq -> `<' `>' | `<' seqlist `>'
 seqlist -> object `,' seqlist | object
@@ -16,7 +16,7 @@ subexpr -> `(' term `)'
 app -> atom `:' expr
 compose -> atom `|' `>' expr
 
-every -> '*' expr
+every -> '*' atom
 selector -> selch selector | selch
 selch -> '0'..'9'
 *)
@@ -42,6 +42,8 @@ and expr r =
   skipws r;
   if skip r '(' then
     subexp r
+  if skip r '*' then
+    every r
   else match obj r with
     | Atom _ as a ->
       begin
@@ -95,5 +97,9 @@ and subexp r =
   skipws r;
   next r ')';
   e
+
+and every r =
+  let i = Atoms.find "every" in
+  Sequence [ Atom i; atom r ]
 
 let read = term
