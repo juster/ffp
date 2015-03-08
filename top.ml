@@ -26,6 +26,8 @@ let rec term r =
   skipws r;
   if skipstr r "->" then
     cond r e
+  else if (skipws r; skipstr r "|>") then
+    (skipws r; Comp (expr r, e))
   else
     e
 
@@ -49,8 +51,6 @@ and expr r =
       begin
         if skip r ':' then
           App (a, expr r)
-        else if (skipws r; skipstr r "|>") then
-          (skipws r; Comp (expr r, a))
         else
           a
       end
