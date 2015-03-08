@@ -5,7 +5,7 @@ open Ffp
 term -> expr | cond |> compose
 cond -> expr `-' `>' term `|' term
 compose -> expr `|' `>' expr
-expr -> object | subexpr | app | compose | every
+expr -> object | subexpr | app | compose | every | select
 
 object -> atom | seq
 atom -> {atomch}
@@ -17,9 +17,25 @@ subexpr -> `(' term `)'
 app -> atom `:' expr
 
 every -> '*' atom
-selector -> selch selector | selch
+select -> {selch}
 selch -> '0'..'9'
 *)
+
+let selch r =
+  match r.next with
+  | Some ('0'..'9') -> true
+  | _ -> false
+
+let nextnum r =
+  let x = (Char.code (nextchar r)) - (Char.code '0') in
+  assert ((x >= 0) && (x <= 9)); x
+
+let select r n =
+  let i = ref n in
+  while selch r do
+    i := (!i * 10) + (nextnum r)
+  done;
+  Sequence [ Atom Forms.select; Atom !i ]
 
 let rec term r =
   let e = expr r in
@@ -46,6 +62,8 @@ and expr r =
     subexp r
   else if skip r '*' then
     every r
+  else if selch r then
+    select r (nextnum r)
   else match obj r with
     | Atom _ as a ->
       begin
@@ -83,7 +101,7 @@ and seq r lst =
 and atom r =
   let b = Buffer.create 16 in
   while atomnext r do
-    Buffer.add_char b (nextchar r); pump r;
+    Buffer.add_char b (nextchar r)
   done;
   match Buffer.contents b with
   | "" -> badsyn r

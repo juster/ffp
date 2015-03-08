@@ -55,21 +55,6 @@ module Prims = struct
   let boolean b =
     if b then truth else fallicy
 
-  let selector n = function
-    | Sequence l ->
-      begin
-        try List.nth l (n-1)
-        with Failure _ -> Bottom
-      end
-    | Bytes s ->
-      begin
-        try
-          let s = String.make 1 (String.get s (n-1)) in
-          Atom (Atoms.add s)
-        with Invalid_argument _ -> Bottom
-      end
-    | _ -> Bottom
-  
   let tail = function
     | Sequence (_ :: []) -> nullat
     | Sequence (hd :: tl) -> Sequence tl
@@ -135,7 +120,6 @@ module Prims = struct
     List.assq a !plist
 
   let _ =
-    add "1" (selector 1);
     add "tail" tail;
     add "id" identity;
     add "atom" atom;
@@ -149,6 +133,7 @@ end
 
 module Forms = struct
   let every = Atoms.next ()
+  let select = Atoms.next ()
 
   let flist = ref []
 

@@ -27,7 +27,7 @@ let create s =
 let nextchar r =
   match r.next with
   | None -> badsyn r
-  | Some ch -> ch
+  | Some ch -> pump r; ch
 
 let atomnext r =
   match r.next with
