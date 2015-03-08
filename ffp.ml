@@ -14,10 +14,13 @@ module Atoms = struct
   let alist = ref [ "?", null; "T", truth; "F", fallicy; "#", default ]
   let n = ref 4
 
+  let next () =
+    let i = !n in
+    incr n; i
+
   let add s =
-    let a = !n in
+    let a = next () in
     alist := (s, a) :: !alist;
-    incr n;
     a
 
   let find s =
